@@ -2,33 +2,52 @@ import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { knex } from '../database'
 import { randomUUID } from 'node:crypto'
+import { checkSessionIdExists } from '../middlewares/check-session-id-exists'
 
 export async function transactionsRoutes(app: FastifyInstance) {
-  app.get('/', async () => {
-    const transactions = await knex('transactions').select()
+  app.get('/', { preHandler: [checkSessionIdExists] }, async (request) => {
+    const { sessionId } = request.cookies
+
+    const transactions = await knex('transactions')
+      .where('session_id', sessionId)
+      .select()
 
     return { transactions }
   })
 
-  app.get('/:id', async (request) => {
+  app.get('/:id', { preHandler: [checkSessionIdExists] }, async (request) => {
     const getTransactionParamsSchema = z.object({
       id: z.string().uuid(),
     })
 
     const { id } = getTransactionParamsSchema.parse(request.params)
 
-    const transaction = await knex('transactions').where('id', id).first()
+    const { sessionId } = request.cookies
+
+    const transaction = await knex('transactions')
+      .where({
+        session_id: sessionId,
+        id,
+      })
+      .first()
 
     return { transaction }
   })
 
-  app.get('/summary', async () => {
-    const summary = await knex('transactions')
-      .sum('amount', { as: 'amount' })
-      .first()
+  app.get(
+    '/summary',
+    { preHandler: [checkSessionIdExists] },
+    async (request) => {
+      const { sessionId } = request.cookies
 
-    return { summary }
-  })
+      const summary = await knex('transactions')
+        .where('session_id', sessionId)
+        .sum('amount', { as: 'amount' })
+        .first()
+
+      return { summary }
+    },
+  )
 
   app.post('/', async (request, reply) => {
     const createTransactionBodySchema = z.object({
@@ -61,4 +80,48 @@ export async function transactionsRoutes(app: FastifyInstance) {
 
     return reply.status(201).send()
   })
+
+  // app.delete('/:id', async (request, reply) => {
+  //   const getTransactionParamsSchema = z.object({
+  //     id: z.string().uuid(),
+  //   })
+
+  //   const { id } = getTransactionParamsSchema.parse(request.params)
+  // const { sessionId } = request.cookies
+  //   const transaction = await knex('transactions')
+  //     .where(session_id: sessionId, id)
+  //     .first()
+  //     .delete()
+
+  //   return reply.send('Transação excluida com sucesso')
+  // })
+
+  // app.patch('/:id', async (request, reply) => {
+  //   const getTransactionParamsSchema = z.object({
+  //     id: z.string().uuid(),
+  //   })
+  //   const { id } = getTransactionParamsSchema.parse(request.params)
+
+  //   const updateTransactionBodySchema = z.object({
+  //     title: z.string().optional(),
+  //     amount: z.number().optional(),
+  //   })
+  //   const { title, amount } = updateTransactionBodySchema.parse(request.body)
+
+  //   const { sessionId } = request.cookies
+
+  //   const transaction = await knex('transactions')
+  //     .where({ session_id: sessionId, id })
+  //     .update({
+  //       title,
+  //       amount,
+  //     })
+  //     .returning('*')
+
+  //   if (transaction.length > 0) {
+  //     return reply.status(200).send(transaction[0])
+  //   } else {
+  //     return reply.status(404).send({ message: 'Transaction not found' })
+  //   }
+  // })
 }
