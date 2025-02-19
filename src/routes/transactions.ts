@@ -23,6 +23,4 @@ export async function transactionsRoutes(app: FastifyInstance) {
 
     return reply.status(201).send()
   })
-
-
 }
