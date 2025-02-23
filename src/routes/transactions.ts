@@ -111,25 +111,16 @@ export async function transactionsRoutes(app: FastifyInstance) {
 
       const updateTransactionBodySchema = z.object({
         title: z.string().optional(),
-        amount: z.number().optional(),
       })
-      const { title, amount } = updateTransactionBodySchema.parse(request.body)
+      const { title } = updateTransactionBodySchema.parse(request.body)
 
       const { sessionId } = request.cookies
 
-      const transaction = await knex('transactions')
-        .where({ session_id: sessionId, id })
-        .update({
-          title,
-          amount,
-        })
-        .returning('*')
+      await knex('transactions').where({ session_id: sessionId, id }).update({
+        title,
+      })
 
-      if (transaction.length > 0) {
-        return reply.status(200).send(transaction[0])
-      } else {
-        return reply.status(404).send({ message: 'Transaction not found' })
-      }
+      return reply.status(204).send()
     },
   )
 }
