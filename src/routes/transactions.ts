@@ -81,47 +81,55 @@ export async function transactionsRoutes(app: FastifyInstance) {
     return reply.status(201).send()
   })
 
-  // app.delete('/:id', async (request, reply) => {
-  //   const getTransactionParamsSchema = z.object({
-  //     id: z.string().uuid(),
-  //   })
+  app.delete(
+    '/:id',
+    { preHandler: [checkSessionIdExists] },
+    async (request, reply) => {
+      const getTransactionParamsSchema = z.object({
+        id: z.string().uuid(),
+      })
 
-  //   const { id } = getTransactionParamsSchema.parse(request.params)
-  // const { sessionId } = request.cookies
-  //   const transaction = await knex('transactions')
-  //     .where(session_id: sessionId, id)
-  //     .first()
-  //     .delete()
+      const { id } = getTransactionParamsSchema.parse(request.params)
+      const { sessionId } = request.cookies
+      const transaction = await knex('transactions')
+        .where({ session_id: sessionId, id })
+        .first()
+        .delete()
 
-  //   return reply.send('Transação excluida com sucesso')
-  // })
+      return reply.send('Transação excluída com sucesso')
+    },
+  )
 
-  // app.patch('/:id', async (request, reply) => {
-  //   const getTransactionParamsSchema = z.object({
-  //     id: z.string().uuid(),
-  //   })
-  //   const { id } = getTransactionParamsSchema.parse(request.params)
+  app.patch(
+    '/:id',
+    { preHandler: [checkSessionIdExists] },
+    async (request, reply) => {
+      const getTransactionParamsSchema = z.object({
+        id: z.string().uuid(),
+      })
+      const { id } = getTransactionParamsSchema.parse(request.params)
 
-  //   const updateTransactionBodySchema = z.object({
-  //     title: z.string().optional(),
-  //     amount: z.number().optional(),
-  //   })
-  //   const { title, amount } = updateTransactionBodySchema.parse(request.body)
+      const updateTransactionBodySchema = z.object({
+        title: z.string().optional(),
+        amount: z.number().optional(),
+      })
+      const { title, amount } = updateTransactionBodySchema.parse(request.body)
 
-  //   const { sessionId } = request.cookies
+      const { sessionId } = request.cookies
 
-  //   const transaction = await knex('transactions')
-  //     .where({ session_id: sessionId, id })
-  //     .update({
-  //       title,
-  //       amount,
-  //     })
-  //     .returning('*')
+      const transaction = await knex('transactions')
+        .where({ session_id: sessionId, id })
+        .update({
+          title,
+          amount,
+        })
+        .returning('*')
 
-  //   if (transaction.length > 0) {
-  //     return reply.status(200).send(transaction[0])
-  //   } else {
-  //     return reply.status(404).send({ message: 'Transaction not found' })
-  //   }
-  // })
+      if (transaction.length > 0) {
+        return reply.status(200).send(transaction[0])
+      } else {
+        return reply.status(404).send({ message: 'Transaction not found' })
+      }
+    },
+  )
 }
