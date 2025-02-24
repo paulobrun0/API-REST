@@ -84,7 +84,7 @@ describe('Transactions Routes', () => {
     )
   })
 
-  it('Should be able to get the summary s', async () => {
+  it('Should be able to get the summary', async () => {
     const createTransactionResponse = await request(app.server)
       .post('/transactions')
       .send({
